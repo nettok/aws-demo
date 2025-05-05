@@ -4,6 +4,7 @@ arm64 = true
 include = ["static"]
 
 [deploy]
+timeout = 1
 memory = 512
 role = "arn:aws:iam::923869673363:role/demo-lambda-axum-role"
 
