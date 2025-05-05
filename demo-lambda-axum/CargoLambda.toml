@@ -1,0 +1,13 @@
+[build]
+output_format = "zip"
+arm64 = true
+include = ["static"]
+
+[deploy]
+memory = 512
+role = "arn:aws:iam::923869673363:role/demo-lambda-axum-role"
+
+[deploy.remote_config]
+profile = "admin-1"
+region = "us-east-1"
+alias = "demo-lambda-axum"
