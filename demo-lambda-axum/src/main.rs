@@ -2,19 +2,15 @@ mod api;
 mod templates;
 
 use axum::{Router, routing::get};
-use axum::response::Redirect;
+use axum::extract::Request;
+use axum::response::{Redirect, Response};
+use axum::middleware::{self, Next};
 use lambda_http::{run, tracing, Error};
-use tracing::Level;
-use tower_http::trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tower_http::services::ServeDir;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing::init_default_subscriber();
-
-    let trace_layer = TraceLayer::new_for_http()
-        .on_request(DefaultOnRequest::new().level(Level::INFO))
-        .on_response(DefaultOnResponse::new().level(Level::INFO));
 
     let app = Router::new()
         .route("/", get(redirect_to_index))
@@ -28,9 +24,16 @@ async fn main() -> Result<(), Error> {
                   .route("/index.html", get(templates::get_index))
         )
         .nest_service("/static", ServeDir::new("static"))
-        .layer(trace_layer);
+        .layer(middleware::from_fn(request_log_middleware));
     
     run(app).await
+}
+
+async fn request_log_middleware(request: Request, next: Next) -> Response {
+    tracing::info!("Request method={} path={}", request.method(), request.uri().path());
+    let response = next.run(request).await;
+    tracing::info!("Response status={}", response.status().as_u16());
+    response
 }
 
 async fn redirect_to_index() -> Redirect {
