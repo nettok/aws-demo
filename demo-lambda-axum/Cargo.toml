@@ -2,10 +2,11 @@
 name = "demo-lambda-axum"
 version = "0.1.0"
 edition = "2024"
+authors = ["Ernesto Menéndez <pyalec@gmail.com>"]
 
 [dependencies]
-lambda_http = "0.14.0"
-
 axum = "0.8"
+askama = "0.14"
+lambda_http = "0.14.0"
 tokio = { version = "1", features = ["macros"] }
 tower-http = { version = "0.6", features = ["fs"] }
