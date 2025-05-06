@@ -4,10 +4,8 @@ use axum::response::Html;
 pub async fn get_index() -> Html<String> {
     #[derive(Debug, Template)]
     #[template(path = "index.html")]
-    struct Tmpl {
-    }
+    struct Index;
 
-    let template = Tmpl {
-    };
+    let template = Index;
     Html(template.render().unwrap())
 }

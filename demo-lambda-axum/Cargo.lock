@@ -224,8 +224,10 @@ dependencies = [
  "askama",
  "axum",
  "lambda_http",
+ "serde",
  "tokio",
  "tower-http",
+ "tracing",
 ]
 
 [[package]]
