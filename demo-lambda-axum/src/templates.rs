@@ -1,11 +1,13 @@
 use askama::Template;
 use axum::response::Html;
+use tracing::{self, instrument};
 
+#[instrument]
 pub async fn get_index() -> Html<String> {
     #[derive(Debug, Template)]
     #[template(path = "index.html")]
-    struct Index;
+    struct IndexTemplate;
 
-    let template = Index;
-    Html(template.render().unwrap())
+    let template = IndexTemplate;
+    Html(template.render().unwrap()) // TODO: error handling instead of unwrap
 }

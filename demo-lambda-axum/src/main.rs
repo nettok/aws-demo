@@ -1,4 +1,5 @@
 mod api;
+mod error;
 mod health;
 mod templates;
 
@@ -18,7 +19,9 @@ async fn main() -> Result<(), Error> {
         .route("/health", get(health::get_health))
         .nest(
             "/api/v1",
-            Router::new().route("/hello", get(api::get_hello)),
+            Router::new()
+                .route("/hello", get(api::get_hello))
+                .route("/error", get(api::get_error)),
         )
         .nest(
             "/app",
