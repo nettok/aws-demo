@@ -1,5 +1,7 @@
 use axum::Json;
+use axum::extract::Request;
 use axum::http::StatusCode;
+use axum::http::header::AsHeaderName;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 use tracing;
@@ -13,7 +15,10 @@ pub struct ErrorResponse {
 struct Error {
     name: &'static str,
     message: String,
-    // TODO: add request_id
+    method: String,
+    path: String,
+    request_id: String,
+    trace_id: String,
 }
 
 pub enum AppError {
@@ -32,11 +37,35 @@ impl IntoResponse for AppError {
     }
 }
 
-pub fn sample_error(message: String) -> AppError {
-    AppError::SampleError(ErrorResponse {
+pub fn sample_error(request: Request, message: String) -> AppError {
+    AppError::SampleError(error_response("SampleError", message, request))
+}
+
+fn error_response(error_name: &'static str, message: String, request: Request) -> ErrorResponse {
+    let method = request.method().to_string();
+    let path = request.uri().path().to_owned();
+    let request_id = get_header(&request, "lambda-runtime-aws-request-id").unwrap_or_default();
+    let trace_id = get_header(&request, "x-amzn-trace-id").unwrap_or_default();
+
+    ErrorResponse {
         error: Error {
-            name: "SampleError",
+            name: error_name,
             message,
+            method,
+            path,
+            request_id,
+            trace_id,
         },
-    })
+    }
+}
+
+fn get_header<K>(request: &Request, key: K) -> Option<String>
+where
+    K: AsHeaderName,
+{
+    request
+        .headers()
+        .get(key)
+        .map(|value| value.to_str().unwrap_or_default())
+        .map(|value| value.to_owned())
 }
