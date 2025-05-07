@@ -1,5 +1,4 @@
 use crate::error;
-
 use axum::extract::Request;
 use axum::response::IntoResponse;
 use tracing::{self, instrument};

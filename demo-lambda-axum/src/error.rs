@@ -1,13 +1,14 @@
+use askama::Error as AskamaError;
 use axum::Json;
 use axum::extract::Request;
 use axum::http::StatusCode;
-use axum::http::header::AsHeaderName;
 use axum::response::{IntoResponse, Response};
+use lambda_http::RequestExt;
 use serde::Serialize;
 use tracing;
 
 #[derive(Serialize)]
-pub struct ErrorResponse {
+pub struct ErrorResp {
     error: Error,
 }
 
@@ -22,32 +23,47 @@ struct Error {
 }
 
 pub enum AppError {
-    SampleError(ErrorResponse),
+    SampleError(ErrorResp),
+    TemplateError(ErrorResp),
 }
 
-impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
+impl AppError {
+    fn into_error_resp(self) -> (StatusCode, ErrorResp) {
         match self {
-            AppError::SampleError(response) => {
-                // TODO: can I also log the location of where the error originated?
-                tracing::error!("{}: {}", response.error.name, response.error.message);
-                (StatusCode::IM_A_TEAPOT, Json(response)).into_response()
-            }
+            AppError::SampleError(r) => (StatusCode::IM_A_TEAPOT, r),
+            AppError::TemplateError(r) => (StatusCode::INTERNAL_SERVER_ERROR, r),
         }
     }
 }
 
-pub fn sample_error(request: Request, message: String) -> AppError {
-    AppError::SampleError(error_response("SampleError", message, request))
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let (status_code, error_resp) = self.into_error_resp();
+        // TODO: can I also log the location of where the error originated?
+        tracing::error!("{}: {}", error_resp.error.name, error_resp.error.message);
+        (status_code, Json(error_resp)).into_response()
+    }
 }
 
-fn error_response(error_name: &'static str, message: String, request: Request) -> ErrorResponse {
+pub fn sample_error(request: Request, message: String) -> AppError {
+    AppError::SampleError(error_resp("SampleError", message, request))
+}
+
+pub fn template_error(request: Request, askama_error: AskamaError) -> AppError {
+    AppError::TemplateError(error_resp(
+        "TemplateError",
+        askama_error.to_string(),
+        request,
+    ))
+}
+
+fn error_resp(error_name: &'static str, message: String, request: Request) -> ErrorResp {
     let method = request.method().to_string();
     let path = request.uri().path().to_owned();
-    let request_id = get_header(&request, "lambda-runtime-aws-request-id").unwrap_or_default();
-    let trace_id = get_header(&request, "x-amzn-trace-id").unwrap_or_default();
+    let request_id = request.lambda_context().request_id;
+    let trace_id = request.lambda_context().xray_trace_id.unwrap_or_default();
 
-    ErrorResponse {
+    ErrorResp {
         error: Error {
             name: error_name,
             message,
@@ -57,15 +73,4 @@ fn error_response(error_name: &'static str, message: String, request: Request) -
             trace_id,
         },
     }
-}
-
-fn get_header<K>(request: &Request, key: K) -> Option<String>
-where
-    K: AsHeaderName,
-{
-    request
-        .headers()
-        .get(key)
-        .map(|value| value.to_str().unwrap_or_default())
-        .map(|value| value.to_owned())
 }
