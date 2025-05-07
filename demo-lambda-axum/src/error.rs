@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::panic::Location;
 
 use askama::Error as AskamaError;
 use axum::Json;
@@ -27,18 +28,25 @@ struct ErrorDetails {
 
 #[derive(Error, Debug)]
 pub enum AppError {
-    #[error("{}: {}", .0.error.name, .0.error.message)]
-    SampleError(ErrorResp),
+    #[error("{}: {} ({})", resp.error.name, resp.error.message, location)]
+    SampleError {
+        location: &'static Location<'static>,
+        resp: ErrorResp,
+    },
 
-    #[error("{}: {}", .0.error.name, .0.error.message)]
-    TemplateError(ErrorResp, #[source] AskamaError),
+    #[error("{}: {} ({})", resp.error.name, resp.error.message, location)]
+    TemplateError {
+        location: &'static Location<'static>,
+        resp: ErrorResp,
+        source: AskamaError,
+    },
 }
 
 impl AppError {
     fn into_error_resp(self) -> (StatusCode, ErrorResp) {
         match self {
-            AppError::SampleError(r) => (StatusCode::IM_A_TEAPOT, r),
-            AppError::TemplateError(r, _) => (StatusCode::INTERNAL_SERVER_ERROR, r),
+            AppError::SampleError { resp, .. } => (StatusCode::IM_A_TEAPOT, resp),
+            AppError::TemplateError { resp, .. } => (StatusCode::INTERNAL_SERVER_ERROR, resp),
         }
     }
 }
@@ -50,20 +58,27 @@ impl IntoResponse for AppError {
             tracing::error!("Error source: {}", source);
         }
         let (status_code, error_resp) = self.into_error_resp();
-        // TODO: can I also log the location of where the error originated?
         (status_code, Json(error_resp)).into_response()
     }
 }
 
+#[track_caller]
 pub fn sample_error(request: Request, message: String) -> AppError {
-    AppError::SampleError(error_resp("SampleError", message, request))
+    let location = Location::caller();
+    AppError::SampleError {
+        location,
+        resp: error_resp("SampleError", message, request),
+    }
 }
 
+#[track_caller]
 pub fn template_error(request: Request, askama_error: AskamaError) -> AppError {
-    AppError::TemplateError(
-        error_resp("TemplateError", askama_error.to_string(), request),
-        askama_error,
-    )
+    let location = Location::caller();
+    AppError::TemplateError {
+        location,
+        resp: error_resp("TemplateError", askama_error.to_string(), request),
+        source: askama_error,
+    }
 }
 
 fn error_resp(error_name: &'static str, message: String, request: Request) -> ErrorResp {
