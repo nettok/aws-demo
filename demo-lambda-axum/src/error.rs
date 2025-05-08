@@ -24,26 +24,25 @@ struct ErrorDetails {
     path: String,
     request_id: String,
     trace_id: String,
+
+    #[serde(skip_serializing)]
+    location: &'static Location<'static>,
 }
 
 #[derive(Error, Debug)]
 pub enum AppError {
-    #[error("{}: {} ({})", resp.error.name, resp.error.message, location)]
-    SampleError {
-        location: &'static Location<'static>,
-        resp: ErrorResp,
-    },
+    #[error("{}: {}", resp.error.name, resp.error.message)]
+    SampleError { resp: ErrorResp },
 
-    #[error("{}: {} ({})", resp.error.name, resp.error.message, location)]
+    #[error("{}: {}", resp.error.name, resp.error.message)]
     TemplateError {
-        location: &'static Location<'static>,
         resp: ErrorResp,
         source: AskamaError,
     },
 }
 
 impl AppError {
-    fn into_error_resp(self) -> (StatusCode, ErrorResp) {
+    fn error_resp(&self) -> (StatusCode, &ErrorResp) {
         match self {
             AppError::SampleError { resp, .. } => (StatusCode::IM_A_TEAPOT, resp),
             AppError::TemplateError { resp, .. } => (StatusCode::INTERNAL_SERVER_ERROR, resp),
@@ -53,11 +52,14 @@ impl AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        tracing::error!("{}", self);
-        if let Some(source) = self.source() {
-            tracing::error!("Error source: {}", source);
-        }
-        let (status_code, error_resp) = self.into_error_resp();
+        let (status_code, error_resp) = self.error_resp();
+
+        tracing::error!(
+            location = error_resp.error.location.to_string(),
+            error = self.to_string(),
+            source = self.source().map(|s| s.to_string())
+        );
+
         (status_code, Json(error_resp)).into_response()
     }
 }
@@ -66,8 +68,7 @@ impl IntoResponse for AppError {
 pub fn sample_error(request: Request, message: String) -> AppError {
     let location = Location::caller();
     AppError::SampleError {
-        location,
-        resp: error_resp("SampleError", message, request),
+        resp: error_resp("SampleError", message, request, location),
     }
 }
 
@@ -75,13 +76,17 @@ pub fn sample_error(request: Request, message: String) -> AppError {
 pub fn template_error(request: Request, askama_error: AskamaError) -> AppError {
     let location = Location::caller();
     AppError::TemplateError {
-        location,
-        resp: error_resp("TemplateError", askama_error.to_string(), request),
+        resp: error_resp("TemplateError", askama_error.to_string(), request, location),
         source: askama_error,
     }
 }
 
-fn error_resp(error_name: &'static str, message: String, request: Request) -> ErrorResp {
+fn error_resp(
+    error_name: &'static str,
+    message: String,
+    request: Request,
+    location: &'static Location<'static>,
+) -> ErrorResp {
     let method = request.method().to_string();
     let path = request.uri().path().to_owned();
     let request_id = request.lambda_context().request_id;
@@ -95,6 +100,7 @@ fn error_resp(error_name: &'static str, message: String, request: Request) -> Er
             path,
             request_id,
             trace_id,
+            location,
         },
     }
 }

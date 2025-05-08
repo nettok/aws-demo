@@ -9,7 +9,7 @@ pub async fn get_hello() -> &'static str {
     "Hola Mundo!"
 }
 
-#[instrument]
+#[instrument(skip(request))]
 pub async fn get_error(request: Request) -> impl IntoResponse {
     error::sample_error(request, "I am a sample error".to_owned())
 }

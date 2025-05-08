@@ -4,7 +4,7 @@ use axum::extract::Request;
 use axum::response::Html;
 use tracing::{self, instrument};
 
-#[instrument]
+#[instrument(skip(request))]
 pub async fn get_index(request: Request) -> Result<Html<String>, AppError> {
     #[derive(Template)]
     #[template(path = "index.html")]
