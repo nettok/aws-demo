@@ -1,14 +1,17 @@
 mod api;
+mod db;
 mod error;
+mod extract;
 mod health;
-mod templates;
+mod htm;
 
 use std::{env, str::FromStr};
 
+use axum::Router;
 use axum::extract::Request;
 use axum::middleware::{self, Next};
 use axum::response::{Redirect, Response};
-use axum::{Router, routing::get};
+use axum::routing::{delete, get, post};
 use lambda_http::run;
 use tower_http::BoxError;
 use tower_http::services::ServeDir;
@@ -30,8 +33,16 @@ async fn main() -> Result<(), BoxError> {
                 .route("/error", get(api::get_error)),
         )
         .nest(
-            "/app",
-            Router::new().route("/index.html", get(templates::get_index)),
+            "/htm",
+            Router::new()
+                .route("/index.html", get(htm::get_index))
+                .nest(
+                    "/journal",
+                    Router::new()
+                        .route("/entries", get(htm::journal::get_journal_entries))
+                        .route("/entries", post(htm::journal::update_journal_entry))
+                        .route("/entries/{id}", delete(htm::journal::delete_journal_entry)),
+                ),
         )
         .nest_service("/static", ServeDir::new("static"))
         .layer(middleware::from_fn(request_log_middleware));
@@ -51,7 +62,7 @@ async fn request_log_middleware(request: Request, next: Next) -> Response {
 }
 
 async fn redirect_to_index() -> Redirect {
-    Redirect::temporary("/app/index.html")
+    Redirect::temporary("/htm/index.html")
 }
 
 pub fn init_tracing_default_subscriber() {

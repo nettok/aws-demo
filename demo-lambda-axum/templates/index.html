@@ -1,11 +1,22 @@
 {% extends "_layout.html" %}
 
 {%- block title -%}
-Index
+Journal
 {%- endblock -%}
 
 {%- block content -%}
-<button hx-get="/api/v1/hello" hx-swap="outerHTML">
-    Click Me
-</button>
+<h1>Journal</h1>
+<form hx-post="/htm/journal/entries"
+      hx-swap="none"
+      hx-on::after-request="if(event.detail.successful) this.reset()"
+      hx-on::response-error="alert('Error')">
+    <input name="value" type="text" required>
+    <button type="submit">Add</button>
+</form>
+<div hx-get="/htm/journal/entries"
+     hx-trigger="load, load-journal-entries from:body"
+     hx-swap="innerHTML">
+    <div class="loading">Loading data...</div>
+</div>
 {%- endblock -%}
+
