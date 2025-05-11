@@ -1,11 +1,23 @@
+use axum::Json;
 use crate::error;
 use axum::response::IntoResponse;
+use chrono::{DateTime, Utc};
+use serde::Serialize;
 use tracing::{self, instrument};
 
+#[derive(Serialize)]
+pub struct Greeting {
+    value: String,
+    timestamp: DateTime<Utc>
+}
+
 #[instrument]
-pub async fn get_hello() -> &'static str {
+pub async fn get_hello() -> Json<Greeting> {
     tracing::info!("Saying hello...");
-    "Hola Mundo!"
+    Json(Greeting {
+        value: "Hola mundo!".to_owned(),
+        timestamp: Utc::now()
+    })
 }
 
 #[instrument]
