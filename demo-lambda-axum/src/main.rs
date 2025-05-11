@@ -4,8 +4,7 @@ mod error;
 mod extract;
 mod health;
 mod htm;
-
-use std::{env, str::FromStr};
+mod tracing;
 
 use axum::Router;
 use axum::extract::Request;
@@ -15,13 +14,10 @@ use axum::routing::{delete, get, post};
 use lambda_http::run;
 use tower_http::BoxError;
 use tower_http::services::ServeDir;
-use tracing::Level;
-use tracing::level_filters::LevelFilter;
-use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), BoxError> {
-    init_tracing_default_subscriber();
+    tracing::init_tracing_default_subscriber();
 
     let app = Router::new()
         .route("/", get(redirect_to_index))
@@ -63,22 +59,4 @@ async fn request_log_middleware(request: Request, next: Next) -> Response {
 
 async fn redirect_to_index() -> Redirect {
     Redirect::temporary("/htm/index.html")
-}
-
-pub fn init_tracing_default_subscriber() {
-    let log_level_str = env::var("AWS_LAMBDA_LOG_LEVEL").or_else(|_| env::var("RUST_LOG"));
-    let log_level =
-        Level::from_str(log_level_str.as_deref().unwrap_or("INFO")).unwrap_or(Level::INFO);
-
-    tracing_subscriber::fmt()
-        .with_target(false)
-        .without_time()
-        .with_env_filter(
-            EnvFilter::builder()
-                .with_default_directive(LevelFilter::from_level(log_level).into())
-                .from_env_lossy(),
-        )
-        .compact()
-        .with_ansi(false)
-        .init();
 }
