@@ -7,130 +7,122 @@ use axum::extract::rejection::FormRejection;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
+use strum::IntoStaticStr;
 use thiserror::Error;
 use tracing;
 use validator::ValidationErrors;
 
-#[derive(Serialize, Debug)]
+#[derive(Debug, Serialize)]
 pub struct ErrorResp {
     error: ErrorDetails,
-
-    #[serde(skip_serializing)]
-    location: &'static Location<'static>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Debug, Serialize)]
 struct ErrorDetails {
     name: &'static str,
     message: String,
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug, Error, IntoStaticStr)]
 pub enum ServerError {
-    #[error("{}: {}", resp.error.name, resp.error.message)]
-    SampleError { resp: ErrorResp },
+    #[error("Sample error: {}", message)]
+    SampleError {
+        message: String,
+        location: &'static Location<'static>,
+    },
 
-    #[error("{}: {}", resp.error.name, resp.error.message)]
+    #[error("Template error: {}", source)]
     TemplateError {
-        resp: ErrorResp,
+        location: &'static Location<'static>,
         source: AskamaError,
     },
 
-    #[error("{}: {}", resp.error.name, resp.error.message)]
+    #[error("Validation error: {}", source)]
     ValidationError {
-        resp: ErrorResp,
+        location: &'static Location<'static>,
         source: ValidationErrors,
     },
 
-    #[error("{}: {}", resp.error.name, resp.error.message)]
+    #[error("Form rejection: {}", source)]
     AxumFormRejection {
-        resp: ErrorResp,
+        location: &'static Location<'static>,
         source: FormRejection,
     },
 }
 
 impl ServerError {
-    fn error_resp(&self) -> (StatusCode, &ErrorResp) {
-        match self {
-            ServerError::SampleError { resp, .. } => (StatusCode::IM_A_TEAPOT, resp),
-            ServerError::TemplateError { resp, .. } => (StatusCode::INTERNAL_SERVER_ERROR, resp),
-            ServerError::ValidationError { resp, .. } => (StatusCode::BAD_REQUEST, resp),
-            ServerError::AxumFormRejection { resp, .. } => (StatusCode::BAD_REQUEST, resp),
+    fn to_response(&self) -> (StatusCode, ErrorResp) {
+        let resp = Self::error_resp(self.into(), self.to_string());
+
+        let (status, location) = match self {
+            ServerError::SampleError { location, .. } => (StatusCode::IM_A_TEAPOT, location),
+            ServerError::TemplateError { location, .. } => {
+                (StatusCode::INTERNAL_SERVER_ERROR, location)
+            }
+            ServerError::ValidationError { location, .. } => (StatusCode::BAD_REQUEST, location),
+            ServerError::AxumFormRejection { location, .. } => (StatusCode::BAD_REQUEST, location),
+        };
+
+        tracing::error!(
+            location = location.to_string(),
+            error = self.to_string(),
+            source = self.source().map(|s| s.to_string())
+        );
+
+        (status, resp)
+    }
+
+    fn error_resp(error_name: &'static str, message: String) -> ErrorResp {
+        ErrorResp {
+            error: ErrorDetails {
+                name: error_name,
+                message,
+            },
         }
     }
 }
 
 impl IntoResponse for ServerError {
     fn into_response(self) -> Response {
-        let (status_code, error_resp) = self.error_resp();
-
-        tracing::error!(
-            location = error_resp.location.to_string(),
-            error = self.to_string(),
-            source = self.source().map(|s| s.to_string())
-        );
-
+        let (status_code, error_resp) = self.to_response();
         (status_code, Json(error_resp)).into_response()
     }
 }
 
 #[track_caller]
 pub fn sample_error(message: String) -> ServerError {
-    let location = Location::caller();
     ServerError::SampleError {
-        resp: error_resp("SampleError", message, location),
+        message,
+        location: Location::caller(),
     }
 }
 
-#[track_caller]
-pub fn template_error(source: AskamaError) -> ServerError {
-    let location = Location::caller();
-    ServerError::TemplateError {
-        resp: error_resp(
-            "TemplateError",
-            source.to_string(),
-            location,
-        ),
-        source,
+impl From<AskamaError> for ServerError {
+    #[track_caller]
+    fn from(value: AskamaError) -> Self {
+        ServerError::TemplateError {
+            location: Location::caller(),
+            source: value,
+        }
     }
 }
 
-#[track_caller]
-pub fn validation_error(source: ValidationErrors) -> ServerError {
-    let location = Location::caller();
-    ServerError::ValidationError {
-        resp: error_resp(
-            "ValidationError",
-            source.to_string(),
-            location,
-        ),
-        source,
+impl From<ValidationErrors> for ServerError {
+    #[track_caller]
+    fn from(value: ValidationErrors) -> Self {
+        ServerError::ValidationError {
+            location: Location::caller(),
+            source: value,
+        }
     }
 }
 
-#[track_caller]
-pub fn axum_form_rejection(source: FormRejection) -> ServerError {
-    let location = Location::caller();
-    ServerError::AxumFormRejection {
-        resp: error_resp(
-            "AxumFormRejection",
-            source.to_string(),
-            location,
-        ),
-        source,
-    }
-}
-
-fn error_resp(
-    error_name: &'static str,
-    message: String,
-    location: &'static Location<'static>,
-) -> ErrorResp {
-    ErrorResp {
-        error: ErrorDetails {
-            name: error_name,
-            message,
-        },
-        location,
+impl From<FormRejection> for ServerError {
+    #[track_caller]
+    fn from(value: FormRejection) -> Self {
+        ServerError::AxumFormRejection {
+            location: Location::caller(),
+            source: value,
+        }
     }
 }

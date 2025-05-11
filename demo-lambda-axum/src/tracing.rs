@@ -1,6 +1,6 @@
+use crate::tracing::metadata::LevelFilter;
 use std::{env, str::FromStr};
 use tracing_subscriber::EnvFilter;
-use crate::tracing::metadata::LevelFilter;
 
 pub use tracing::*;
 

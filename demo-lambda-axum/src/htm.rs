@@ -1,4 +1,4 @@
-use crate::error::{self, ServerError};
+use crate::error::ServerError;
 use askama::Template;
 use axum::response::Html;
 use tracing::{self, instrument};
@@ -76,5 +76,5 @@ where
     template
         .render()
         .map(|content| Html(content))
-        .map_err(|error| error::template_error(error))
+        .map_err(|error| ServerError::from(error))
 }
