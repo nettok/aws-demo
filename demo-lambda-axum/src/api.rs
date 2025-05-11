@@ -1,6 +1,4 @@
 use crate::error;
-use crate::error::RequestContext;
-use axum::extract::Request;
 use axum::response::IntoResponse;
 use tracing::{self, instrument};
 
@@ -10,10 +8,7 @@ pub async fn get_hello() -> &'static str {
     "Hola Mundo!"
 }
 
-#[instrument(skip(request))]
-pub async fn get_error(request: Request) -> impl IntoResponse {
-    error::sample_error(
-        RequestContext::from(&request),
-        "I am a sample error".to_owned(),
-    )
+#[instrument]
+pub async fn get_error() -> impl IntoResponse {
+    error::sample_error("I am a sample error".to_owned())
 }

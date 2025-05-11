@@ -1,19 +1,18 @@
-use crate::error::{self, RequestContext, ServerError};
+use crate::error::{self, ServerError};
 use askama::Template;
-use axum::extract::Request;
 use axum::response::Html;
 use tracing::{self, instrument};
 
 type RenderResult = Result<Html<String>, ServerError>;
 
-#[instrument(skip(request))]
-pub async fn get_index(request: Request) -> RenderResult {
+#[instrument]
+pub async fn get_index() -> RenderResult {
     #[derive(Template)]
     #[template(path = "index.html")]
     struct Htm;
 
     let template = Htm;
-    render(template, request)
+    render(template)
 }
 
 pub mod journal {
@@ -21,7 +20,7 @@ pub mod journal {
     use crate::extract::ValidatedForm;
     use crate::htm::{RenderResult, render};
     use askama::Template;
-    use axum::extract::{Path, Request};
+    use axum::extract::Path;
     use axum::response::IntoResponse;
     use serde::Deserialize;
     use std::collections::HashMap;
@@ -36,8 +35,8 @@ pub mod journal {
         value: String,
     }
 
-    #[instrument(skip(request))]
-    pub async fn get_journal_entries(request: Request) -> RenderResult {
+    #[instrument]
+    pub async fn get_journal_entries() -> RenderResult {
         #[derive(Template)]
         #[template(path = "journal/journal_entries.html")]
         struct Htm {
@@ -47,7 +46,7 @@ pub mod journal {
         let template = Htm {
             entries: db::read_entries(),
         };
-        render(template, request)
+        render(template)
     }
 
     #[instrument(skip(entry))]
@@ -70,12 +69,12 @@ pub mod journal {
     }
 }
 
-fn render<T>(template: T, request: Request) -> RenderResult
+fn render<T>(template: T) -> RenderResult
 where
     T: Template,
 {
     template
         .render()
         .map(|content| Html(content))
-        .map_err(|error| error::template_error(RequestContext::from(&request), error))
+        .map_err(|error| error::template_error(error))
 }

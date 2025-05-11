@@ -1,4 +1,4 @@
-use crate::error::{RequestContext, ServerError, axum_form_rejection, validation_error};
+use crate::error::{ServerError, axum_form_rejection, validation_error};
 use axum::Form;
 use axum::extract::rejection::FormRejection;
 use axum::extract::{FromRequest, Request};
@@ -16,15 +16,13 @@ where
     type Rejection = ServerError;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        let request_context = RequestContext::from(&req);
-
         let Form(value) = Form::<T>::from_request(req, state)
             .await
-            .map_err(|rejection| axum_form_rejection(request_context.clone(), rejection))?;
+            .map_err(|rejection| axum_form_rejection(rejection))?;
 
         value
             .validate()
-            .map_err(|errors| validation_error(request_context, errors))?;
+            .map_err(|errors| validation_error(errors))?;
 
         Ok(ValidatedForm(value))
     }

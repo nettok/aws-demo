@@ -3,11 +3,9 @@ use std::panic::Location;
 
 use askama::Error as AskamaError;
 use axum::Json;
-use axum::extract::Request;
 use axum::extract::rejection::FormRejection;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use lambda_http::RequestExt;
 use serde::Serialize;
 use thiserror::Error;
 use tracing;
@@ -25,15 +23,6 @@ pub struct ErrorResp {
 struct ErrorDetails {
     name: &'static str,
     message: String,
-    request_context: RequestContext,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct RequestContext {
-    method: String,
-    path: String,
-    request_id: String,
-    trace_id: String,
 }
 
 #[derive(Error, Debug)]
@@ -85,38 +74,21 @@ impl IntoResponse for ServerError {
     }
 }
 
-impl From<&Request> for RequestContext {
-    fn from(request: &Request) -> Self {
-        let method = request.method().to_string();
-        let path = request.uri().path().to_owned();
-        let request_id = request.lambda_context().request_id;
-        let trace_id = request.lambda_context().xray_trace_id.unwrap_or_default();
-
-        RequestContext {
-            method,
-            path,
-            request_id,
-            trace_id,
-        }
-    }
-}
-
 #[track_caller]
-pub fn sample_error(request_context: RequestContext, message: String) -> ServerError {
+pub fn sample_error(message: String) -> ServerError {
     let location = Location::caller();
     ServerError::SampleError {
-        resp: error_resp("SampleError", message, request_context, location),
+        resp: error_resp("SampleError", message, location),
     }
 }
 
 #[track_caller]
-pub fn template_error(request_context: RequestContext, source: AskamaError) -> ServerError {
+pub fn template_error(source: AskamaError) -> ServerError {
     let location = Location::caller();
     ServerError::TemplateError {
         resp: error_resp(
             "TemplateError",
             source.to_string(),
-            request_context,
             location,
         ),
         source,
@@ -124,13 +96,12 @@ pub fn template_error(request_context: RequestContext, source: AskamaError) -> S
 }
 
 #[track_caller]
-pub fn validation_error(request_context: RequestContext, source: ValidationErrors) -> ServerError {
+pub fn validation_error(source: ValidationErrors) -> ServerError {
     let location = Location::caller();
     ServerError::ValidationError {
         resp: error_resp(
             "ValidationError",
             source.to_string(),
-            request_context,
             location,
         ),
         source,
@@ -138,13 +109,12 @@ pub fn validation_error(request_context: RequestContext, source: ValidationError
 }
 
 #[track_caller]
-pub fn axum_form_rejection(request_context: RequestContext, source: FormRejection) -> ServerError {
+pub fn axum_form_rejection(source: FormRejection) -> ServerError {
     let location = Location::caller();
     ServerError::AxumFormRejection {
         resp: error_resp(
             "AxumFormRejection",
             source.to_string(),
-            request_context,
             location,
         ),
         source,
@@ -154,14 +124,12 @@ pub fn axum_form_rejection(request_context: RequestContext, source: FormRejectio
 fn error_resp(
     error_name: &'static str,
     message: String,
-    request_context: RequestContext,
     location: &'static Location<'static>,
 ) -> ErrorResp {
     ErrorResp {
         error: ErrorDetails {
             name: error_name,
             message,
-            request_context,
         },
         location,
     }
