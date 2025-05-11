@@ -4,6 +4,7 @@ mod error;
 mod extract;
 mod health;
 mod htm;
+mod serde_decorators;
 mod tracing;
 
 use axum::Router;

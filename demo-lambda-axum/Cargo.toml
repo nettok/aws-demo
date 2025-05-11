@@ -6,6 +6,7 @@ authors = ["Ernesto Menéndez <pyalec@gmail.com>"]
 
 [dependencies]
 axum = "0.8"
+axum-extra = { version = "0.10", features = ["query"] }
 askama = "0.14"
 lambda_http = "0.14.0"
 serde = { version = "1", features = ["derive"] }
