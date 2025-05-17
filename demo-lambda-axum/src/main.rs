@@ -26,7 +26,7 @@ struct AppState {
 
 #[tokio::main]
 async fn main() -> Result<(), BoxError> {
-    dotenv()?;
+    dotenv().ok();
     tracing::init_tracing_default_subscriber();
 
     let state = AppState {
