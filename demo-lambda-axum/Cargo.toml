@@ -20,3 +20,4 @@ uuid = { version = "1.16", features = ["v4"] }
 validator = {  version = "0.20", features = ["derive"] }
 strum = {  version = "0.27", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
+config = { version = "0.15", features = ["toml"] }

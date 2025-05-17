@@ -1,4 +1,4 @@
-use crate::error::ServerError;
+use crate::error::AppError;
 use axum::Form;
 use axum::extract::rejection::FormRejection;
 use axum::extract::{FromRequest, Request};
@@ -13,7 +13,7 @@ where
     S: Send + Sync,
     Form<T>: FromRequest<S, Rejection = FormRejection>,
 {
-    type Rejection = ServerError;
+    type Rejection = AppError;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let Form(value) = Form::<T>::from_request(req, state).await?;

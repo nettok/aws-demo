@@ -1,9 +1,9 @@
-use crate::error::ServerError;
+use crate::error::AppError;
 use askama::Template;
 use axum::response::Html;
 use tracing::{self, instrument};
 
-type RenderResult = Result<Html<String>, ServerError>;
+type RenderResult = Result<Html<String>, AppError>;
 
 #[instrument]
 pub async fn get_index() -> RenderResult {
@@ -76,5 +76,5 @@ where
     template
         .render()
         .map(|content| Html(content))
-        .map_err(|error| ServerError::from(error))
+        .map_err(|error| AppError::from(error))
 }

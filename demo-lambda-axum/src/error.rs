@@ -24,7 +24,7 @@ struct ErrorDetails {
 }
 
 #[derive(Debug, Error, IntoStaticStr)]
-pub enum ServerError {
+pub enum AppError {
     #[error("Sample error: {}", message)]
     SampleError {
         message: String,
@@ -48,19 +48,26 @@ pub enum ServerError {
         location: &'static Location<'static>,
         source: FormRejection,
     },
+
+    #[error("Config error: {}", source)]
+    ConfigError {
+        location: &'static Location<'static>,
+        source: config::ConfigError,
+    },
 }
 
-impl ServerError {
+impl AppError {
     fn to_response(&self) -> (StatusCode, ErrorResp) {
         let resp = Self::error_resp(self.into(), self.to_string());
 
         let (status, location) = match self {
-            ServerError::SampleError { location, .. } => (StatusCode::IM_A_TEAPOT, location),
-            ServerError::TemplateError { location, .. } => {
+            AppError::SampleError { location, .. } => (StatusCode::IM_A_TEAPOT, location),
+            AppError::TemplateError { location, .. } => {
                 (StatusCode::INTERNAL_SERVER_ERROR, location)
             }
-            ServerError::ValidationError { location, .. } => (StatusCode::BAD_REQUEST, location),
-            ServerError::AxumFormRejection { location, .. } => (StatusCode::BAD_REQUEST, location),
+            AppError::ValidationError { location, .. } => (StatusCode::BAD_REQUEST, location),
+            AppError::AxumFormRejection { location, .. } => (StatusCode::BAD_REQUEST, location),
+            AppError::ConfigError { location, .. } => (StatusCode::INTERNAL_SERVER_ERROR, location),
         };
 
         tracing::error!(
@@ -82,7 +89,7 @@ impl ServerError {
     }
 }
 
-impl IntoResponse for ServerError {
+impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status_code, error_resp) = self.to_response();
         (status_code, Json(error_resp)).into_response()
@@ -90,37 +97,47 @@ impl IntoResponse for ServerError {
 }
 
 #[track_caller]
-pub fn sample_error(message: String) -> ServerError {
-    ServerError::SampleError {
+pub fn sample_error(message: String) -> AppError {
+    AppError::SampleError {
         message,
         location: Location::caller(),
     }
 }
 
-impl From<AskamaError> for ServerError {
+impl From<AskamaError> for AppError {
     #[track_caller]
     fn from(value: AskamaError) -> Self {
-        ServerError::TemplateError {
+        AppError::TemplateError {
             location: Location::caller(),
             source: value,
         }
     }
 }
 
-impl From<ValidationErrors> for ServerError {
+impl From<ValidationErrors> for AppError {
     #[track_caller]
     fn from(value: ValidationErrors) -> Self {
-        ServerError::ValidationError {
+        AppError::ValidationError {
             location: Location::caller(),
             source: value,
         }
     }
 }
 
-impl From<FormRejection> for ServerError {
+impl From<FormRejection> for AppError {
     #[track_caller]
     fn from(value: FormRejection) -> Self {
-        ServerError::AxumFormRejection {
+        AppError::AxumFormRejection {
+            location: Location::caller(),
+            source: value,
+        }
+    }
+}
+
+impl From<config::ConfigError> for AppError {
+    #[track_caller]
+    fn from(value: config::ConfigError) -> Self {
+        AppError::ConfigError {
             location: Location::caller(),
             source: value,
         }

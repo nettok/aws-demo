@@ -1,4 +1,5 @@
 mod api;
+mod config;
 mod db;
 mod error;
 mod extract;
@@ -7,6 +8,7 @@ mod htm;
 mod serde_decorators;
 mod tracing;
 
+use crate::config::{AppConfig, load_app_config};
 use axum::Router;
 use axum::extract::Request;
 use axum::middleware::{self, Next};
@@ -16,9 +18,18 @@ use lambda_http::run;
 use tower_http::BoxError;
 use tower_http::services::ServeDir;
 
+#[derive(Clone)]
+struct AppState {
+    config: AppConfig,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), BoxError> {
     tracing::init_tracing_default_subscriber();
+
+    let state = AppState {
+        config: load_app_config()?,
+    };
 
     let app = Router::new()
         .route("/", get(redirect_to_index))
@@ -42,7 +53,8 @@ async fn main() -> Result<(), BoxError> {
                 ),
         )
         .nest_service("/static", ServeDir::new("static"))
-        .layer(middleware::from_fn(request_log_middleware));
+        .layer(middleware::from_fn(request_log_middleware))
+        .with_state(state);
 
     run(app).await
 }
