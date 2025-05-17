@@ -14,6 +14,7 @@ use axum::extract::Request;
 use axum::middleware::{self, Next};
 use axum::response::{Redirect, Response};
 use axum::routing::{delete, get, post};
+use dotenvy::dotenv;
 use lambda_http::run;
 use tower_http::BoxError;
 use tower_http::services::ServeDir;
@@ -25,6 +26,7 @@ struct AppState {
 
 #[tokio::main]
 async fn main() -> Result<(), BoxError> {
+    dotenv()?;
     tracing::init_tracing_default_subscriber();
 
     let state = AppState {
