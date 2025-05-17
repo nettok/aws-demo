@@ -1,7 +1,7 @@
 [build]
 output_format = "zip"
 arm64 = true
-include = ["static"]
+include = ["static", "config/default.toml"]
 
 [deploy]
 timeout = 1
