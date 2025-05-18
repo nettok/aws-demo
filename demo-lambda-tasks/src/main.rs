@@ -1,5 +1,5 @@
-use demo_lambda_axum_common::config::load_app_config;
-use demo_lambda_axum_common::tracing;
+use util::config::load_app_config;
+use util::tracing;
 use dotenvy::dotenv;
 use lambda_runtime::{Error, LambdaEvent, run, service_fn};
 use serde::Deserialize;

@@ -1,11 +1,11 @@
 [package]
-name = "demo-lambda-axum-tasks"
+name = "demo-lambda-tasks"
 version = "0.1.0"
 edition = "2024"
 authors = ["Ernesto Menéndez <pyalec@gmail.com>"]
 
 [dependencies]
-demo-lambda-axum-common = { path = "../demo-lambda-axum-common" }
+util = { path = "../util" }
 lambda_runtime = "0.13"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }

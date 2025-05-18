@@ -444,7 +444,6 @@ dependencies = [
  "axum",
  "axum-extra",
  "chrono",
- "demo-lambda-axum-common",
  "dotenvy",
  "lambda_http",
  "lazy_static",
@@ -453,30 +452,20 @@ dependencies = [
  "thiserror",
  "tokio",
  "tower-http",
+ "util",
  "uuid",
  "validator",
 ]
 
 [[package]]
-name = "demo-lambda-axum-common"
+name = "demo-lambda-tasks"
 version = "0.1.0"
 dependencies = [
- "config",
- "serde",
- "strum",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "demo-lambda-axum-tasks"
-version = "0.1.0"
-dependencies = [
- "demo-lambda-axum-common",
  "dotenvy",
  "lambda_runtime",
  "serde",
  "tokio",
+ "util",
 ]
 
 [[package]]
@@ -2021,6 +2010,17 @@ name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
+
+[[package]]
+name = "util"
+version = "0.1.0"
+dependencies = [
+ "config",
+ "serde",
+ "strum",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "uuid"

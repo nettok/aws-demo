@@ -1,5 +1,5 @@
 [package]
-name = "demo-lambda-axum-common"
+name = "util"
 version = "0.1.0"
 edition = "2024"
 authors = ["Ernesto Menéndez <pyalec@gmail.com>"]

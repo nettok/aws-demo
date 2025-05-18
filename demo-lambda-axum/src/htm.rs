@@ -1,7 +1,7 @@
 use crate::error::AppError;
 use askama::Template;
 use axum::response::Html;
-use demo_lambda_axum_common::tracing::{self, instrument};
+use util::tracing::{self, instrument};
 
 type RenderResult = Result<Html<String>, AppError>;
 
@@ -22,7 +22,7 @@ pub mod journal {
     use askama::Template;
     use axum::extract::Path;
     use axum::response::IntoResponse;
-    use demo_lambda_axum_common::tracing::{self, instrument};
+    use util::tracing::{self, instrument};
     use serde::Deserialize;
     use std::collections::HashMap;
     use validator::Validate;

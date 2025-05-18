@@ -5,7 +5,7 @@ edition = "2024"
 authors = ["Ernesto Menéndez <pyalec@gmail.com>"]
 
 [dependencies]
-demo-lambda-axum-common = { path = "../demo-lambda-axum-common" }
+util = { path = "../util" }
 axum = "0.8"
 axum-extra = { version = "0.10", features = ["query"] }
 askama = "0.14"

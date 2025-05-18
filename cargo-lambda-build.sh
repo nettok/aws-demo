@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-lambdas=("demo-lambda-axum" "demo-lambda-axum-tasks")
+lambdas=("demo-lambda-axum" "demo-lambda-tasks")
 
 for dir in "${lambdas[@]}"; do
   pushd $dir > /dev/null

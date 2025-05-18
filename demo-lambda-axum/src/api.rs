@@ -4,7 +4,7 @@ use axum::Json;
 use axum::response::IntoResponse;
 use axum_extra::extract::OptionalQuery;
 use chrono::{DateTime, Utc};
-use demo_lambda_axum_common::tracing::{self, instrument};
+use util::tracing::{self, instrument};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
