@@ -6,10 +6,10 @@ use axum::Json;
 use axum::extract::rejection::FormRejection;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use demo_lambda_axum_common::tracing;
 use serde::Serialize;
 use strum::IntoStaticStr;
 use thiserror::Error;
-use tracing;
 use validator::ValidationErrors;
 
 #[derive(Debug, Serialize)]
@@ -48,12 +48,6 @@ pub enum AppError {
         location: &'static Location<'static>,
         source: FormRejection,
     },
-
-    #[error("Config error: {}", source)]
-    ConfigError {
-        location: &'static Location<'static>,
-        source: config::ConfigError,
-    },
 }
 
 impl AppError {
@@ -67,7 +61,6 @@ impl AppError {
             }
             AppError::ValidationError { location, .. } => (StatusCode::BAD_REQUEST, location),
             AppError::AxumFormRejection { location, .. } => (StatusCode::BAD_REQUEST, location),
-            AppError::ConfigError { location, .. } => (StatusCode::INTERNAL_SERVER_ERROR, location),
         };
 
         tracing::error!(
@@ -128,16 +121,6 @@ impl From<FormRejection> for AppError {
     #[track_caller]
     fn from(value: FormRejection) -> Self {
         AppError::AxumFormRejection {
-            location: Location::caller(),
-            source: value,
-        }
-    }
-}
-
-impl From<config::ConfigError> for AppError {
-    #[track_caller]
-    fn from(value: config::ConfigError) -> Self {
-        AppError::ConfigError {
             location: Location::caller(),
             source: value,
         }

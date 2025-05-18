@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "demo-lambda-axum",
+    "demo-lambda-axum-common",
+    "demo-lambda-axum-tasks"
+]
+resolver = "3"

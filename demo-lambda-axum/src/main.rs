@@ -1,23 +1,26 @@
 mod api;
-mod config;
 mod db;
 mod error;
 mod extract;
 mod health;
 mod htm;
 mod serde_decorators;
-mod tracing;
 
-use crate::config::{AppConfig, load_app_config};
 use axum::Router;
 use axum::extract::Request;
 use axum::middleware::{self, Next};
 use axum::response::{Redirect, Response};
 use axum::routing::{delete, get, post};
+use demo_lambda_axum_common::config::load_app_config;
+use demo_lambda_axum_common::tracing;
 use dotenvy::dotenv;
 use lambda_http::run;
+use serde::Deserialize;
 use tower_http::BoxError;
 use tower_http::services::ServeDir;
+
+#[derive(Clone, Deserialize)]
+struct AppConfig {}
 
 #[derive(Clone)]
 struct AppState {
@@ -30,7 +33,7 @@ async fn main() -> Result<(), BoxError> {
     tracing::init_tracing_default_subscriber();
 
     let state = AppState {
-        config: load_app_config()?,
+        config: load_app_config::<AppConfig>()?,
     };
 
     let app = Router::new()

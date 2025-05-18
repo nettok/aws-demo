@@ -1,0 +1,12 @@
+[package]
+name = "demo-lambda-axum-common"
+version = "0.1.0"
+edition = "2024"
+authors = ["Ernesto Menéndez <pyalec@gmail.com>"]
+
+[dependencies]
+config = { version = "0.15", features = ["toml"] }
+serde = { version = "1", features = ["derive"] }
+strum = {  version = "0.27", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

@@ -1,11 +1,9 @@
-use crate::error::AppError;
 use config::Config;
 use serde::Deserialize;
 use std::str::FromStr;
 use strum::{Display, EnumString};
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct AppConfig {}
+pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Clone, Display, EnumString)]
 enum RunProfile {
@@ -16,7 +14,7 @@ enum RunProfile {
     Prod,
 }
 
-pub fn load_app_config() -> Result<AppConfig, AppError> {
+pub fn load_app_config<'de, T: Clone + Deserialize<'de>>() -> Result<T, BoxError> {
     let default_run_profile = RunProfile::Dev;
 
     let profile = std::env::var("RUN_PROFILE")
@@ -32,6 +30,5 @@ pub fn load_app_config() -> Result<AppConfig, AppError> {
         .add_source(config::Environment::default())
         .build()?;
 
-    conf.try_deserialize::<AppConfig>()
-        .map_err(|e| AppError::from(e))
+    conf.try_deserialize::<T>().map_err(|e| e.into())
 }

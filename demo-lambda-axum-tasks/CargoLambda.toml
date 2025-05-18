@@ -2,14 +2,14 @@
 output_format = "zip"
 lambda_dir = "dist"
 arm64 = true
-include = ["static", "config/default.toml", "config/prod.toml"]
+include = ["config/default.toml", "config/prod.toml"]
 
 [deploy]
-timeout = 1
+timeout = 10
 memory = 512
 role = "arn:aws:iam::923869673363:role/demo-lambda-axum-role"
 
 [deploy.remote_config]
 profile = "admin-1"
 region = "us-east-1"
-alias = "demo-lambda-axum"
+alias = "demo-lambda-axum-tasks"

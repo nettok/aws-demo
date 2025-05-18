@@ -1,8 +1,8 @@
-use crate::tracing::metadata::LevelFilter;
-use std::{env, str::FromStr};
-use tracing_subscriber::EnvFilter;
-
 pub use tracing::*;
+
+use std::{env, str::FromStr};
+use tracing::metadata::LevelFilter;
+use tracing_subscriber::EnvFilter;
 
 pub fn init_tracing_default_subscriber() {
     let log_level_str = env::var("AWS_LAMBDA_LOG_LEVEL").or_else(|_| env::var("RUST_LOG"));
