@@ -6,10 +6,10 @@ use axum::Json;
 use axum::extract::rejection::FormRejection;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use util::tracing;
 use serde::Serialize;
 use strum::IntoStaticStr;
 use thiserror::Error;
+use util::tracing;
 use validator::ValidationErrors;
 
 #[derive(Debug, Serialize)]

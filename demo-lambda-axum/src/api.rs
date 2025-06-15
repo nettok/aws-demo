@@ -4,8 +4,8 @@ use axum::Json;
 use axum::response::IntoResponse;
 use axum_extra::extract::OptionalQuery;
 use chrono::{DateTime, Utc};
-use util::tracing::{self, instrument};
 use serde::{Deserialize, Serialize};
+use util::tracing::{self, instrument};
 
 #[derive(Deserialize)]
 pub struct GreetingParams {

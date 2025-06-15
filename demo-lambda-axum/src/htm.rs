@@ -22,9 +22,9 @@ pub mod journal {
     use askama::Template;
     use axum::extract::Path;
     use axum::response::IntoResponse;
-    use util::tracing::{self, instrument};
     use serde::Deserialize;
     use std::collections::HashMap;
+    use util::tracing::{self, instrument};
     use validator::Validate;
 
     #[derive(Deserialize, Validate)]

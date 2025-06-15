@@ -11,13 +11,13 @@ use axum::extract::Request;
 use axum::middleware::{self, Next};
 use axum::response::{Redirect, Response};
 use axum::routing::{delete, get, post};
-use util::config::load_app_config;
-use util::tracing;
 use dotenvy::dotenv;
 use lambda_http::run;
 use serde::Deserialize;
 use tower_http::BoxError;
 use tower_http::services::ServeDir;
+use util::config::load_app_config;
+use util::tracing;
 
 #[derive(Clone, Deserialize)]
 struct AppConfig {}

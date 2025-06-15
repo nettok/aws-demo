@@ -1,0 +1,1 @@
+root_cert = "/etc/pki/tls/certs/ca-bundle.crt"
