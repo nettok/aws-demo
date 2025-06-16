@@ -6,7 +6,7 @@ create table users (
 );
 
 create table entries (
-    id uuid not null,       -- must be UUID v7 to preserve insertion order (use same timezone as "date" column for consistency)
+    id uuid not null,       -- must be UUID v7 to preserve insertion order
     user_id uuid not null,
     date date not null,
     content text not null,

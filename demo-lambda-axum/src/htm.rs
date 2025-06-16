@@ -1,71 +1,106 @@
 use crate::error::AppError;
 use askama::Template;
+use axum::extract::Path;
 use axum::response::Html;
+use chrono::NaiveDate;
 use util::tracing::{self, instrument};
 
 type RenderResult = Result<Html<String>, AppError>;
 
 #[instrument]
-pub async fn get_index() -> RenderResult {
+pub async fn get_index(Path(date): Path<NaiveDate>) -> RenderResult {
     #[derive(Template)]
     #[template(path = "index.html")]
-    struct Htm;
+    struct Htm {
+        date: NaiveDate,
+    }
 
-    let template = Htm;
+    let template = Htm { date };
     render(template)
 }
 
 pub mod journal {
-    use crate::db;
     use crate::extract::ValidatedForm;
     use crate::htm::{RenderResult, render};
+    use crate::{DatabaseConnection, db};
     use askama::Template;
     use axum::extract::Path;
     use axum::response::IntoResponse;
+    use chrono::NaiveDate;
     use serde::Deserialize;
-    use std::collections::HashMap;
     use util::tracing::{self, instrument};
+    use uuid::Uuid;
     use validator::Validate;
 
     #[derive(Deserialize, Validate)]
-    pub struct Entry {
+    pub struct EntryForm {
         id: Option<String>,
 
         #[validate(length(min = 1, message = "Can not be empty"))]
         value: String,
     }
 
+    pub struct Entry {
+        pub date: NaiveDate,
+        pub id: Uuid,
+        pub content: String,
+    }
+
+    #[derive(Deserialize)]
+    pub struct DateAndId {
+        date: NaiveDate,
+        id: Uuid,
+    }
+
     #[instrument]
-    pub async fn get_journal_entries() -> RenderResult {
+    pub async fn get_journal_entries(
+        DatabaseConnection(db_conn): DatabaseConnection,
+        Path(date): Path<NaiveDate>,
+    ) -> RenderResult {
         #[derive(Template)]
         #[template(path = "journal/journal_entries.html")]
         struct Htm {
-            entries: HashMap<String, String>,
+            entries: Vec<Entry>,
         }
 
+        // TODO: get user_id from session
+        let user_id = Uuid::parse_str("ec388d97-03b6-4957-bea5-4aceae499ef4").unwrap();
+
         let template = Htm {
-            entries: db::read_entries(),
+            entries: db::read_entries(db_conn, &user_id, &date).await,
         };
         render(template)
     }
 
     #[instrument(skip(entry))]
     pub async fn update_journal_entry(
-        ValidatedForm(entry): ValidatedForm<Entry>,
+        DatabaseConnection(db_conn): DatabaseConnection,
+        Path(date): Path<NaiveDate>,
+        ValidatedForm(entry): ValidatedForm<EntryForm>,
     ) -> impl IntoResponse {
+        // TODO: get user_id from session
+        let user_id = Uuid::parse_str("ec388d97-03b6-4957-bea5-4aceae499ef4").unwrap();
+
         let id = entry
             .id
             .clone()
-            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+            .map(|str| Uuid::parse_str(&str).unwrap())
+            .unwrap_or_else(|| Uuid::now_v7());
         let value = &entry.value;
 
-        db::update_entry(&id, &value);
+        db::update_entry(db_conn, &user_id, &date, &id, &value).await;
         [("HX-Trigger", "load-journal-entries")]
     }
 
-    #[instrument(skip(id))]
-    pub async fn delete_journal_entry(Path(id): Path<String>) {
-        db::delete_entry(&id);
+    #[instrument(skip(params))]
+    pub async fn delete_journal_entry(
+        DatabaseConnection(db_conn): DatabaseConnection,
+        Path(params): Path<DateAndId>,
+    ) {
+        // TODO: get user_id from session
+        let user_id = Uuid::parse_str("ec388d97-03b6-4957-bea5-4aceae499ef4").unwrap();
+
+        db::delete_entry(db_conn, &user_id, &params.date, &params.id).await;
     }
 }
 

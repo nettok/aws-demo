@@ -1,19 +1,57 @@
-use lazy_static::lazy_static;
-use std::collections::HashMap;
-use std::sync::Mutex;
+use crate::PostgresPooledConnection;
+use crate::htm::journal::Entry;
+use chrono::NaiveDate;
+use uuid::Uuid;
 
-lazy_static! {
-    static ref DB: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+pub async fn read_entries(
+    db_conn: PostgresPooledConnection,
+    user_id: &Uuid,
+    date: &NaiveDate,
+) -> Vec<Entry> {
+    let rows = db_conn
+        .query(
+            "select id, content from entries where user_id=$1 and date=$2",
+            &[&user_id, &date],
+        )
+        .await
+        .unwrap();
+
+    rows.iter()
+        .map(|row| Entry {
+            date: date.clone(),
+            id: row.get("id"),
+            content: row.get("content"),
+        })
+        .collect()
 }
 
-pub fn read_entries() -> HashMap<String, String> {
-    DB.lock().unwrap().clone()
+pub async fn update_entry(
+    db_conn: PostgresPooledConnection,
+    user_id: &Uuid,
+    date: &NaiveDate,
+    id: &Uuid,
+    content: &String,
+) {
+    db_conn
+        .execute(
+            "insert into entries (user_id, date, id, content) values ($1, $2, $3, $4)",
+            &[&user_id, &date, id, content],
+        )
+        .await
+        .unwrap();
 }
 
-pub fn update_entry(key: &String, value: &String) {
-    DB.lock().unwrap().insert(key.clone(), value.clone());
-}
-
-pub fn delete_entry(key: &String) {
-    DB.lock().unwrap().remove(key);
+pub async fn delete_entry(
+    db_conn: PostgresPooledConnection,
+    user_id: &Uuid,
+    date: &NaiveDate,
+    id: &Uuid,
+) {
+    db_conn
+        .execute(
+            "delete from entries where user_id=$1 and date=$2 and id=$3",
+            &[&user_id, &date, id],
+        )
+        .await
+        .unwrap();
 }

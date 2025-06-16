@@ -14,9 +14,13 @@ serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 tower-http = { version = "0.6", features = ["fs"] }
 thiserror = "2"
-lazy_static = "1.5"
-uuid = { version = "1.16", features = ["v4"] }
+uuid = { version = "1.17", features = ["serde", "v4", "v7"] }
 validator = {  version = "0.20", features = ["derive"] }
 strum = {  version = "0.27", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
+tokio-postgres = {  version = "0.7", features = ["with-uuid-1", "with-chrono-0_4"] }
+postgres-native-tls = "0.5"
+native-tls = { version = "0.2", features = ["vendored"] }
+bb8 = "0.9"
+bb8-postgres = "0.9"

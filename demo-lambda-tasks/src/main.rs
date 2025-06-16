@@ -8,7 +8,7 @@ refinery::embed_migrations!("migrations");
 
 #[derive(Clone, Deserialize)]
 struct AppConfig {
-    root_cert: String,
+    ca_certs: String,
     postgres: String,
 }
 
@@ -22,7 +22,8 @@ async fn main() -> Result<(), Error> {
 
     run(service_fn(move |event: LambdaEvent<String>| async move {
         handler(shared_config, event).await
-    })).await?;
+    }))
+    .await?;
     Ok(())
 }
 
@@ -39,16 +40,13 @@ async fn migrate(config: &AppConfig) -> Result<(), Error> {
     use postgres_native_tls::MakeTlsConnector;
     use std::fs;
 
-    let cert = fs::read(&config.root_cert)?;
+    let cert = fs::read(&config.ca_certs)?;
     let cert = Certificate::from_pem(&cert)?;
-    let connector = TlsConnector::builder()
-        .add_root_certificate(cert)
-        .build()?;
+    let connector = TlsConnector::builder().add_root_certificate(cert).build()?;
 
     let connector = MakeTlsConnector::new(connector);
 
-    let (mut client, connection) =
-        tokio_postgres::connect(&config.postgres, connector).await?;
+    let (mut client, connection) = tokio_postgres::connect(&config.postgres, connector).await?;
 
     tokio::spawn(async move {
         if let Err(e) = connection.await {

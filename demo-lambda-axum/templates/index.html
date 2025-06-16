@@ -6,17 +6,16 @@ Journal
 
 {%- block content -%}
 <h1>Journal</h1>
-<form hx-post="/htm/journal/entries"
+<form hx-post="/htm/journal/entries/{{ date }}"
       hx-swap="none"
       hx-on::after-request="if(event.detail.successful) this.reset()"
       hx-on::response-error="alert('Error')">
     <input name="value" type="text" required>
     <button type="submit">Add</button>
 </form>
-<div hx-get="/htm/journal/entries"
+<div hx-get="/htm/journal/entries/{{ date }}"
      hx-trigger="load, load-journal-entries from:body"
      hx-swap="innerHTML">
     <div class="loading">Loading data...</div>
 </div>
 {%- endblock -%}
-

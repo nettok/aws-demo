@@ -2,9 +2,9 @@
   <tbody hx-target="closest tr" hx-swap="outerHTML">
     {% for entry in entries %}
     <tr>
-      <td>{{ entry.1 | e }}</td>
+      <td>{{ entry.content | e }}</td>
       <td>
-        <button hx-delete="/htm/journal/entries/{{ entry.0 }}">
+        <button hx-delete="/htm/journal/entries/{{ entry.date }}/{{ entry.id }}">
           Delete
         </button>
       </td>
