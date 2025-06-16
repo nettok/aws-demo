@@ -8,7 +8,7 @@ mod serde_decorators;
 mod session;
 
 use crate::db::{PostgresPool, postgres_pool};
-use crate::htm::{get_login, post_login};
+use crate::htm::{journal, login};
 use crate::session::session_middleware;
 use axum::Router;
 use axum::extract::Request;
@@ -71,18 +71,18 @@ async fn main() -> Result<(), BoxError> {
         .nest(
             "/htm",
             Router::new()
-                .route("/login", get(get_login))
-                .route("/login", post(post_login))
+                .route("/login", get(login::get_login))
+                .route("/login", post(login::post_login))
                 .route("/index", get(redirect_to_index_with_date))
-                .route("/index/{date}", get(htm::get_index))
+                .route("/index/{date}", get(journal::get_index))
                 .nest(
                     "/journal",
                     Router::new()
-                        .route("/entries/{date}", get(htm::journal::get_journal_entries))
-                        .route("/entries/{date}", post(htm::journal::update_journal_entry))
+                        .route("/entries/{date}", get(journal::get_journal_entries))
+                        .route("/entries/{date}", post(journal::update_journal_entry))
                         .route(
                             "/entries/{date}/{id}",
-                            delete(htm::journal::delete_journal_entry),
+                            delete(journal::delete_journal_entry),
                         ),
                 ),
         )
