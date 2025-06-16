@@ -20,9 +20,9 @@ pub async fn get_index(Path(date): Path<NaiveDate>) -> RenderResult {
 }
 
 pub mod journal {
+    use crate::db::{db_entries, DatabaseConnection};
     use crate::extract::ValidatedForm;
     use crate::htm::{RenderResult, render};
-    use crate::{DatabaseConnection, db};
     use askama::Template;
     use axum::extract::Path;
     use axum::response::IntoResponse;
@@ -67,7 +67,7 @@ pub mod journal {
         let user_id = Uuid::parse_str("ec388d97-03b6-4957-bea5-4aceae499ef4").unwrap();
 
         let template = Htm {
-            entries: db::read_entries(db_conn, &user_id, &date).await,
+            entries: db_entries::read_entries(db_conn, &user_id, &date).await,
         };
         render(template)
     }
@@ -88,7 +88,7 @@ pub mod journal {
             .unwrap_or_else(|| Uuid::now_v7());
         let value = &entry.value;
 
-        db::update_entry(db_conn, &user_id, &date, &id, &value).await;
+        db_entries::update_entry(db_conn, &user_id, &date, &id, &value).await;
         [("HX-Trigger", "load-journal-entries")]
     }
 
@@ -100,7 +100,7 @@ pub mod journal {
         // TODO: get user_id from session
         let user_id = Uuid::parse_str("ec388d97-03b6-4957-bea5-4aceae499ef4").unwrap();
 
-        db::delete_entry(db_conn, &user_id, &params.date, &params.id).await;
+        db_entries::delete_entry(db_conn, &user_id, &params.date, &params.id).await;
     }
 }
 

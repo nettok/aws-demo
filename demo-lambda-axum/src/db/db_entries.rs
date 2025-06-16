@@ -1,4 +1,4 @@
-use crate::PostgresPooledConnection;
+use crate::db::PostgresPooledConnection;
 use crate::htm::journal::Entry;
 use chrono::NaiveDate;
 use uuid::Uuid;
