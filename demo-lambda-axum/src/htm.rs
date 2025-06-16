@@ -1,11 +1,69 @@
+use crate::db;
+use crate::db::DatabaseConnection;
 use crate::error::AppError;
+use crate::extract::ValidatedForm;
 use askama::Template;
 use axum::extract::Path;
-use axum::response::Html;
+use axum::response::{Html, IntoResponse, Redirect, Response};
+use axum_extra::extract::PrivateCookieJar;
+use axum_extra::extract::cookie::Cookie;
 use chrono::NaiveDate;
+use serde::Deserialize;
+use time::Duration;
 use util::tracing::{self, instrument};
+use validator::Validate;
 
 type RenderResult = Result<Html<String>, AppError>;
+
+#[derive(Deserialize, Validate)]
+pub struct LoginForm {
+    #[validate(length(min = 1, message = "Can not be empty"))]
+    username: String,
+
+    #[validate(length(min = 1, message = "Can not be empty"))]
+    password: String,
+}
+
+#[instrument]
+pub async fn get_login() -> RenderResult {
+    #[derive(Template)]
+    #[template(path = "login.html")]
+    struct Htm;
+
+    let template = Htm;
+    render(template)
+}
+
+#[instrument(skip(login))]
+pub async fn post_login(
+    jar: PrivateCookieJar,
+    DatabaseConnection(db_conn): DatabaseConnection,
+    ValidatedForm(login): ValidatedForm<LoginForm>,
+) -> Result<(PrivateCookieJar, Response), AppError> {
+    #[derive(Template)]
+    #[template(path = "login.html")]
+    struct Htm;
+
+    if let Some(user) = db::users::get_user_by_name(db_conn, &login.username).await {
+        // TODO: password should be hashed
+        if login.password == user.password {
+            let cookie = Cookie::build(("user_id", user.id.hyphenated().to_string()))
+                .path("/")
+                .secure(true)
+                .http_only(true)
+                .max_age(Duration::minutes(30));
+
+            let updated_jar = jar.add(cookie);
+            Ok((updated_jar, Redirect::to("/htm/index").into_response()))
+        } else {
+            let template = Htm;
+            render(template).map(|html| (jar, html.into_response()))
+        }
+    } else {
+        let template = Htm;
+        render(template).map(|html| (jar, html.into_response()))
+    }
+}
 
 #[instrument]
 pub async fn get_index(Path(date): Path<NaiveDate>) -> RenderResult {
@@ -27,6 +85,7 @@ pub mod journal {
     use askama::Template;
     use axum::extract::Path;
     use axum::response::IntoResponse;
+    use axum_extra::extract::PrivateCookieJar;
     use chrono::NaiveDate;
     use serde::Deserialize;
     use util::tracing::{self, instrument};
@@ -49,6 +108,7 @@ pub mod journal {
 
     #[instrument]
     pub async fn get_journal_entries(
+        jar: PrivateCookieJar,
         DatabaseConnection(db_conn): DatabaseConnection,
         Path(date): Path<NaiveDate>,
     ) -> RenderResult {
@@ -58,8 +118,7 @@ pub mod journal {
             entries: Vec<Entry>,
         }
 
-        // TODO: get user_id from session
-        let user_id = Uuid::parse_str("ec388d97-03b6-4957-bea5-4aceae499ef4").unwrap();
+        let user_id = Uuid::parse_str(jar.get("user_id").unwrap().value()).unwrap();
 
         let template = Htm {
             entries: db::entries::read_entries(db_conn, &user_id, &date).await,
@@ -69,12 +128,12 @@ pub mod journal {
 
     #[instrument(skip(entry))]
     pub async fn update_journal_entry(
+        jar: PrivateCookieJar,
         DatabaseConnection(db_conn): DatabaseConnection,
         Path(date): Path<NaiveDate>,
         ValidatedForm(entry): ValidatedForm<EntryForm>,
     ) -> impl IntoResponse {
-        // TODO: get user_id from session
-        let user_id = Uuid::parse_str("ec388d97-03b6-4957-bea5-4aceae499ef4").unwrap();
+        let user_id = Uuid::parse_str(jar.get("user_id").unwrap().value()).unwrap();
 
         let id = entry
             .id
@@ -89,11 +148,11 @@ pub mod journal {
 
     #[instrument(skip(params))]
     pub async fn delete_journal_entry(
+        jar: PrivateCookieJar,
         DatabaseConnection(db_conn): DatabaseConnection,
         Path(params): Path<DateAndId>,
     ) {
-        // TODO: get user_id from session
-        let user_id = Uuid::parse_str("ec388d97-03b6-4957-bea5-4aceae499ef4").unwrap();
+        let user_id = Uuid::parse_str(jar.get("user_id").unwrap().value()).unwrap();
 
         db::entries::delete_entry(db_conn, &user_id, &params.date, &params.id).await;
     }

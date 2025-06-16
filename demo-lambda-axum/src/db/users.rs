@@ -8,7 +8,7 @@ pub struct User {
     pub password: String,
 }
 
-pub async fn get_user_by_id(db_conn: PostgresPooledConnection, id: Uuid) -> Option<User> {
+pub async fn get_user_by_id(db_conn: PostgresPooledConnection, id: &Uuid) -> Option<User> {
     let row = db_conn
         .query_opt("select id, name, password from users where id=$1", &[&id])
         .await
@@ -17,7 +17,7 @@ pub async fn get_user_by_id(db_conn: PostgresPooledConnection, id: Uuid) -> Opti
     row.map(row_to_user)
 }
 
-pub async fn get_user_by_name(db_conn: PostgresPooledConnection, name: String) -> Option<User> {
+pub async fn get_user_by_name(db_conn: PostgresPooledConnection, name: &String) -> Option<User> {
     let row = db_conn
         .query_opt(
             "select id, name, password from users where name=$1",

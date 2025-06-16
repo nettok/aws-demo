@@ -7,7 +7,7 @@ authors = ["Ernesto Menéndez <pyalec@gmail.com>"]
 [dependencies]
 util = { path = "../util" }
 axum = "0.8"
-axum-extra = { version = "0.10", features = ["query"] }
+axum-extra = { version = "0.10", features = ["query", "cookie-private"] }
 askama = "0.14"
 lambda_http = "0.14.0"
 serde = { version = "1", features = ["derive"] }
@@ -24,3 +24,5 @@ postgres-native-tls = "0.5"
 native-tls = { version = "0.2", features = ["vendored"] }
 bb8 = "0.9"
 bb8-postgres = "0.9"
+base64 = "0.22"
+time = "0.3"

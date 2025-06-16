@@ -1,0 +1,20 @@
+{% extends "_layout.html" %}
+
+{%- block title -%}
+Journal - Login
+{%- endblock -%}
+
+{%- block content -%}
+<h1>Journal - Login</h1>
+<form method="post">
+    <label>
+        Username:
+        <input name="username" type="text" required>
+    </label>
+    <label>
+        Password:
+        <input name="password" type="password" required>
+    </label>
+    <button type="submit">Login</button>
+</form>
+{%- endblock -%}
