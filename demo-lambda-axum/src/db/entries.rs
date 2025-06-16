@@ -1,7 +1,12 @@
 use crate::db::PostgresPooledConnection;
-use crate::htm::journal::Entry;
 use chrono::NaiveDate;
 use uuid::Uuid;
+
+pub struct Entry {
+    pub date: NaiveDate,
+    pub id: Uuid,
+    pub content: String,
+}
 
 pub async fn read_entries(
     db_conn: PostgresPooledConnection,

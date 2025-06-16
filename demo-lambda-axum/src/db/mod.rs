@@ -1,4 +1,5 @@
-pub mod db_entries;
+pub mod entries;
+pub mod users;
 
 use crate::{AppConfig, AppState};
 use axum::extract::{FromRef, FromRequestParts, State};
