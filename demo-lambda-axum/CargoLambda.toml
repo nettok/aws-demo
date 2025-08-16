@@ -5,7 +5,7 @@ arm64 = true
 include = ["static", "config/default.toml", "config/prod.toml"]
 
 [deploy]
-timeout = 1
+timeout = 5
 memory = 512
 role = "arn:aws:iam::923869673363:role/demo-lambda-axum-role"
 
